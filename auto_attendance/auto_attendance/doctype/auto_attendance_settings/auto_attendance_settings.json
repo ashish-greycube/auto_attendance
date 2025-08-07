@@ -1,0 +1,83 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-06-05 09:54:52.655343",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "last_sync_of_checkin_data",
+  "section_break_vqcl",
+  "done_manually",
+  "from_date",
+  "to_date",
+  "column_break_mjky",
+  "create_checkin"
+ ],
+ "fields": [
+  {
+   "fieldname": "last_sync_of_checkin_data",
+   "fieldtype": "Datetime",
+   "label": "Last sync of checkin data",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "done_manually",
+   "fieldtype": "Check",
+   "label": "Done Manually"
+  },
+  {
+   "depends_on": "eval:doc.done_manually",
+   "fieldname": "create_checkin",
+   "fieldtype": "Button",
+   "label": "Create Checkin"
+  },
+  {
+   "depends_on": "eval:doc.done_manually",
+   "fieldname": "from_date",
+   "fieldtype": "Datetime",
+   "label": "From Date",
+   "mandatory_depends_on": "eval:doc.done_manually"
+  },
+  {
+   "depends_on": "eval:doc.done_manually",
+   "fieldname": "to_date",
+   "fieldtype": "Datetime",
+   "label": "To Date",
+   "mandatory_depends_on": "eval:doc.done_manually"
+  },
+  {
+   "fieldname": "section_break_vqcl",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_mjky",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-06-05 10:16:34.799309",
+ "modified_by": "Administrator",
+ "module": "Auto Attendance",
+ "name": "Auto Attendance Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

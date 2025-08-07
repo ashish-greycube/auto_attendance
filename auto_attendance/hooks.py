@@ -148,23 +148,23 @@ app_license = "mit"
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"auto_attendance.tasks.all"
-# 	],
-# 	"daily": [
-# 		"auto_attendance.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"auto_attendance.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"auto_attendance.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"auto_attendance.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"cron": {
+        "*/3 * * * *" : ["auto_attendance.api.get_data_and_create_checkin"]
+    }
+	# "daily": [
+	# 	"auto_attendance.tasks.daily"
+	# ],
+	# "hourly": [
+	# 	"auto_attendance.tasks.hourly"
+	# ],
+	# "weekly": [
+	# 	"auto_attendance.tasks.weekly"
+	# ],
+	# "monthly": [
+	# 	"auto_attendance.tasks.monthly"
+	# ],
+}
 
 # Testing
 # -------
