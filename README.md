@@ -2,6 +2,8 @@
 
 Customization for Auto Attendance
 
+For Data use this : https://sohcm.com/SmartApp_ess/api/SwipeDetails/GetDeviceLogs?APIKey=233916012427&AccountName=ACE&FromDate=2025-05-15&ToDate=2025-05-15
+
 ### Installation
 
 You can install this app using the [bench](https://github.com/frappe/bench) CLI:
