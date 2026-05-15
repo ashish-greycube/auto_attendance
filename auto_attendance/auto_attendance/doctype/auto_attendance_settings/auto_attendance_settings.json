@@ -5,61 +5,64 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "last_sync_of_checkin_data",
-  "section_break_vqcl",
-  "done_manually",
-  "from_date",
-  "to_date",
-  "column_break_mjky",
-  "create_checkin"
+  "url",
+  "userid",
+  "password",
+  "column_break_0tq7",
+  "attendance_run_date",
+  "create_checkin",
+  "section_break_iuax",
+  "last_sync_of_checkin_data"
  ],
  "fields": [
   {
    "fieldname": "last_sync_of_checkin_data",
-   "fieldtype": "Datetime",
+   "fieldtype": "Date",
    "label": "Last sync of checkin data",
    "read_only": 1
   },
   {
-   "default": "0",
-   "fieldname": "done_manually",
-   "fieldtype": "Check",
-   "label": "Done Manually"
+   "fieldname": "password",
+   "fieldtype": "Password",
+   "label": "Password"
   },
   {
-   "depends_on": "eval:doc.done_manually",
+   "fieldname": "section_break_iuax",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "userid",
+   "fieldtype": "Data",
+   "label": "UserID"
+  },
+  {
+   "fieldname": "column_break_0tq7",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "create_checkin",
    "fieldtype": "Button",
    "label": "Create Checkin"
   },
   {
-   "depends_on": "eval:doc.done_manually",
-   "fieldname": "from_date",
-   "fieldtype": "Datetime",
-   "label": "From Date",
-   "mandatory_depends_on": "eval:doc.done_manually"
+   "description": "Ex.http://matrixserver.yourcompany.com/api.svc/v2/attendance-daily",
+   "fieldname": "url",
+   "fieldtype": "Data",
+   "label": "URL",
+   "options": "URL"
   },
   {
-   "depends_on": "eval:doc.done_manually",
-   "fieldname": "to_date",
-   "fieldtype": "Datetime",
-   "label": "To Date",
-   "mandatory_depends_on": "eval:doc.done_manually"
-  },
-  {
-   "fieldname": "section_break_vqcl",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_mjky",
-   "fieldtype": "Column Break"
+   "description": "The date for which you want to fetch checkin logs",
+   "fieldname": "attendance_run_date",
+   "fieldtype": "Date",
+   "label": "Attendance Run Date"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-06-05 10:16:34.799309",
+ "modified": "2026-05-15 17:55:52.183637",
  "modified_by": "Administrator",
  "module": "Auto Attendance",
  "name": "Auto Attendance Settings",

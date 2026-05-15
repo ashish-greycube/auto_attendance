@@ -149,12 +149,12 @@ app_license = "mit"
 # ---------------
 
 scheduler_events = {
-	"cron": {
-        "*/3 * * * *" : ["auto_attendance.api.get_data_and_create_checkin"]
-    }
-	# "daily": [
-	# 	"auto_attendance.tasks.daily"
-	# ],
+	# "cron": {
+    #     "*/3 * * * *" : ["auto_attendance.api.get_data_and_create_checkin"]
+    # }
+	"daily": [
+		"auto_attendance.api.get_data_from_api_and_create_checkin"
+	],
 	# "hourly": [
 	# 	"auto_attendance.tasks.hourly"
 	# ],

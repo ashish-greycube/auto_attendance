@@ -1,0 +1,120 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-05-14 01:03:56.756741",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "log_status",
+  "checkin_date",
+  "checkin_data",
+  "section_break_kxwx",
+  "job_start_time",
+  "total_punch_count",
+  "column_break_sgcd",
+  "job_end_time",
+  "employee_checkin_count",
+  "section_break_ldny",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "checkin_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Checkin Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "checkin_data",
+   "fieldtype": "Code",
+   "label": "Checkin Data",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "employee_checkin_count",
+   "fieldtype": "Int",
+   "label": "Employee Checkin Count",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Text Editor",
+   "label": "Error",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_punch_count",
+   "fieldtype": "Int",
+   "label": "Total Punch Count",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "Not Started",
+   "fieldname": "log_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Log Status",
+   "no_copy": 1,
+   "options": "\nNot Started\nIn Progress\nError\nFinished With Error\nFinished",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_kxwx",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "job_start_time",
+   "fieldtype": "Datetime",
+   "label": "Job Start Time",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "job_end_time",
+   "fieldtype": "Datetime",
+   "label": "Job End Time",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_sgcd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_ldny",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-15 20:54:02.254915",
+ "modified_by": "Administrator",
+ "module": "Auto Attendance",
+ "name": "Checkin Logs",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
