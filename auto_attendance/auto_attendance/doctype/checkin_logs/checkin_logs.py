@@ -15,6 +15,36 @@ class CheckinLogs(Document):
 		frappe.enqueue(create_employee_checkins, docname=self.name, queue="long",job_name="Create Employee Checkins for date {0}".format(self.checkin_date))
 		# create_employee_checkins(self.name)
 
+
+# The device reports direction on every event; 0 is a reader entry, 1 an exit.
+LOG_TYPE_BY_ENTRY_EXIT = {"0": "IN", "1": "OUT"}
+
+
+def iter_punches(checkin_data):
+	"""Yield (user_id, punch_time, log_type) from either device payload shape.
+
+	Current payload is `event-ta-date` - one record per punch, carrying the
+	IN/OUT direction. Checkin Logs stored before the switch hold the older
+	`attendance-daily` shape (one record per employee-day, punch1..punch12,
+	no direction), so keep reading those as well: reprocessing an old log
+	should still work.
+	"""
+	events = checkin_data.get("event-ta-date")
+	if events is not None:
+		for record in events:
+			yield (
+				record.get("userid"),
+				record.get("eventdatetime"),
+				LOG_TYPE_BY_ENTRY_EXIT.get(str(record.get("entryexittype"))),
+			)
+		return
+
+	for record in checkin_data.get("attendance-daily") or []:
+		for i in range(1, 13):
+			punch_time_str = record.get(f"punch{i}")
+			if punch_time_str:
+				yield record.get("userid"), punch_time_str, None
+
 @frappe.whitelist()
 def create_employee_checkins(docname):
 	print(docname,"==============")
@@ -40,62 +70,58 @@ def create_employee_checkins(docname):
 		if checkin_data:
 			# print("Creating Employee Checkins from API data...",checkin_data)
 
-			for record in checkin_data.get("attendance-daily"):
-				user_id = record.get("userid")
-				
-				# Determine the Employee ID linked to this userid
-				# Assuming 'attendance_device_id' or a custom field stores the Matrix UserID
-				employee = frappe.db.get_value("Employee", {"attendance_device_id": user_id}, "name")
-				
-				if not employee:
-					add_error_to_doc(checkin_log_doc, f"Employee not found for User ID: {user_id}", "Employee Not Found")
-					# frappe.log_error(f"Employee not found for User ID: {user_id}", "Attendance Sync Error")
+			# One lookup for the whole run - the event feed is per punch, so a
+			# query per record would be several hundred round trips a day.
+			employee_by_device_id = {
+				row.attendance_device_id: row.name
+				for row in frappe.get_all(
+					"Employee",
+					filters={"attendance_device_id": ["!=", ""]},
+					fields=["name", "attendance_device_id"],
+				)
+				if row.attendance_device_id
+			}
+			# A device id nobody is mapped to would otherwise raise one error per
+			# punch; report each unknown id once instead.
+			unknown_device_ids = set()
+
+			for user_id, punch_time_str, log_type in iter_punches(checkin_data):
+				if not user_id or not punch_time_str:
 					continue
 
-				# Iterate through possible punch keys from punch1 to punch12
-				for i in range(1, 13):
-					punch_key = f"punch{i}"
-					punch_time_str = record.get(punch_key)
+				employee = employee_by_device_id.get(str(user_id))
+				if not employee:
+					if user_id not in unknown_device_ids:
+						unknown_device_ids.add(user_id)
+						add_error_to_doc(checkin_log_doc, f"Employee not found for User ID: {user_id}", "Employee Not Found")
+					continue
 
-					# Only proceed if the punch key exists and has a value
-					if punch_time_str:
-						try:
-							# Convert string to Frappe-friendly datetime
-							# Your format: "12/05/2026 08:31:39"
-							punch_time = get_datetime(punch_time_str)
+				try:
+					# Device format: "12/05/2026 08:31:39"
+					punch_time = get_datetime(punch_time_str)
 
-							# Avoid creating duplicate check-ins for the same employee and time
-							if not frappe.db.exists("Employee Checkin", {
-								"employee": employee,
-								"time": punch_time
-							}):
-								# Create the Checkin Document
-								# doc = frappe.get_doc({
-								# 	"doctype": "Employee Checkin",
-								# 	"employee": employee,
-								# 	"time": punch_time,
-								# 	"device_id": "Matrix_Server", # Optional: track source
-								# 	"custom_working_minutes":record.get("worktime")
-								# 	# "log_type": "IN" if i % 2 != 0 else "OUT" # Logical guess: odd=IN, even=OUT
-								# })
-								# doc.insert()
-								emp_checkin_doc = add_log_based_on_employee_field(
-									user_id,
-									punch_time,
-									device_id=None,
-									log_type=None,
-									skip_auto_attendance=0,
-									employee_fieldname="attendance_device_id",
-									latitude=None,
-									longitude=None,
-								)
-								frappe.db.set_value("Employee Checkin", emp_checkin_doc.name,"custom_checkin_log_reference",checkin_log_doc.name)
-								frappe.db.set_value("Employee Checkin", emp_checkin_doc.name,"custom_working_minutes",record.get("worktime"))
-								checkin_count += 1
-								
-						except Exception as e:
-							add_error_to_doc(checkin_log_doc, f"Error processing {punch_key} for User ID {user_id}: {str(e)}", "Error in checkin data")
-							# frappe.log_error(f"Error processing {punch_key} for {user_id}: {str(e)}")
+					# Avoid creating duplicate check-ins for the same employee and time
+					if frappe.db.exists("Employee Checkin", {
+						"employee": employee,
+						"time": punch_time
+					}):
+						continue
+
+					emp_checkin_doc = add_log_based_on_employee_field(
+						user_id,
+						punch_time,
+						device_id=None,
+						log_type=log_type,
+						skip_auto_attendance=0,
+						employee_fieldname="attendance_device_id",
+						latitude=None,
+						longitude=None,
+					)
+					frappe.db.set_value("Employee Checkin", emp_checkin_doc.name,"custom_checkin_log_reference",checkin_log_doc.name)
+					checkin_count += 1
+
+				except Exception as e:
+					add_error_to_doc(checkin_log_doc, f"Error processing punch at {punch_time_str} for User ID {user_id}: {str(e)}", "Error in checkin data")
 
 			# Commit changes to database
 			frappe.db.commit()

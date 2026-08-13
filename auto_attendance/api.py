@@ -11,6 +11,31 @@ from requests.exceptions import (
 	RequestException
 )
 
+DAILY_RESOURCE = "attendance-daily"
+EVENT_RESOURCE = "event-ta-date"
+
+
+def event_api_url(url):
+	"""Point at the device's raw punch feed, whatever resource is configured.
+
+	Settings historically named `attendance-daily`, which is the panel's
+	*processed* daily attendance table. That table only holds users the panel
+	enrols in attendance processing - on this install 55 of the 162 people who
+	actually punched on 20/07/2026 - so two thirds of every day was dropped
+	before it ever reached us, silently, because we imported 100% of what that
+	endpoint chose to return.
+
+	`event-ta-date` is the underlying event log and carries everyone who
+	touched a reader, so always read from there.
+	"""
+	url = (url or "").rstrip("/")
+	for resource in (DAILY_RESOURCE, EVENT_RESOURCE):
+		if url.endswith("/" + resource):
+			url = url[: -(len(resource) + 1)]
+			break
+	return f"{url}/{EVENT_RESOURCE}"
+
+
 @frappe.whitelist()
 def create_checkin_for_selected_date(date):
 	if not date:
@@ -38,15 +63,22 @@ def get_data_from_api_and_create_checkin(attendance_run_date=None):
 		url = url[:-1]
 	
 	if url and user_id and password:
-		date_range = f"{checkin_request_date.strftime('%d%m%Y')}-{checkin_request_date.strftime('%d%m%Y')}"
+		day = checkin_request_date.strftime("%d%m%Y")
+		# event-ta-date wants a full timestamp range, not just the dates
+		date_range = f"{day}000000-{day}235959"
 
 		checkin_log = frappe.new_doc("Checkin Logs")
 		checkin_log.checkin_date = checkin_request_date
 
 		try:
 			# Make the GET request with Basic Auth
-			response = requests.get(f"{url}?action=get;date-range={date_range};format=json", auth=(user_id, password))
-			
+			response = requests.get(
+				f"{event_api_url(url)}?action=get;date-range={date_range};format=json"
+				";field-name=USERID,EVENTDATETIME,ENTRYEXITTYPE",
+				auth=(user_id, password),
+				timeout=120,
+			)
+
 			# Check if the request was successful (status code 200)
 			response.raise_for_status()
 			
@@ -85,18 +117,20 @@ def get_data_from_api_and_create_checkin(attendance_run_date=None):
 	else:
 		frappe.throw(_("Please set the API URL, User ID, and Password in Auto Attendance Settings."))
 def get_total_punches(json_data):
-    total_punches = 0
+	"""Count punches in either payload shape.
 
-    # Extract the list of records safely
-    records = json_data.get("attendance-daily", [])
+	`event-ta-date` returns one record per punch. The older `attendance-daily`
+	returned one record per employee-day with up to 12 punch columns, and the
+	Checkin Logs already on file still hold that shape, so keep counting it too.
+	"""
+	events = json_data.get(EVENT_RESOURCE)
+	if events is not None:
+		return len(events)
 
-    for record in records:
-        # Check for each punch key (punch1 to punch12)
-        for i in range(1, 13):
-            punch_key = f"punch{i}"
+	total_punches = 0
+	for record in json_data.get(DAILY_RESOURCE) or []:
+		for i in range(1, 13):
+			if (record.get(f"punch{i}") or "").strip():
+				total_punches += 1
 
-            # If the punch key exists and is not empty, increment the total counter
-            if record.get(punch_key, "").strip() != "":
-                total_punches += 1
-
-    return total_punches
+	return total_punches
