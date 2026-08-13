@@ -3,6 +3,7 @@
 
 import frappe
 import json
+from datetime import datetime
 from frappe import _
 from frappe.utils import get_datetime, get_link_to_form, now_datetime
 from frappe.model.document import Document
@@ -18,6 +19,30 @@ class CheckinLogs(Document):
 
 # The device reports direction on every event; 0 is a reader entry, 1 an exit.
 LOG_TYPE_BY_ENTRY_EXIT = {"0": "IN", "1": "OUT"}
+
+# The panel sends day-first timestamps: "12/07/2026 08:31:39" is 12 July.
+DEVICE_DATETIME_FORMATS = ("%d/%m/%Y %H:%M:%S", "%d/%m/%Y %H:%M", "%d/%m/%Y")
+
+
+def parse_device_datetime(value):
+	"""Read the device's day-first timestamp.
+
+	`frappe.utils.get_datetime` falls through to dateutil, which reads an
+	ambiguous `dd/mm/yyyy` as *month*-first. Every punch on days 1-12 therefore
+	landed in the wrong month - 12/07/2026 became 7 December, 01/08/2026 became
+	8 January - while days 13-31 parsed correctly because no month can be 13.
+	The corruption is invisible in totals: the swap is symmetric, so 7 August
+	lands on 8 July and vice versa, and both days still look populated.
+
+	Parse the format explicitly instead of guessing at it.
+	"""
+	value = (value or "").strip()
+	for fmt in DEVICE_DATETIME_FORMATS:
+		try:
+			return datetime.strptime(value, fmt)
+		except ValueError:
+			continue
+	raise ValueError(f"Unrecognised device timestamp: {value!r}")
 
 
 def iter_punches(checkin_data):
@@ -97,8 +122,8 @@ def create_employee_checkins(docname):
 					continue
 
 				try:
-					# Device format: "12/05/2026 08:31:39"
-					punch_time = get_datetime(punch_time_str)
+					# Device format: "12/05/2026 08:31:39" - day first
+					punch_time = parse_device_datetime(punch_time_str)
 
 					# Avoid creating duplicate check-ins for the same employee and time
 					if frappe.db.exists("Employee Checkin", {
